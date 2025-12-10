@@ -979,6 +979,15 @@ with shared.gradio_root:
             if image is None:
                 return [None, None, None, False]
             
+            # Handle Gradio image format (can be dict or numpy array)
+            if isinstance(image, dict):
+                img = image.get('image', image)
+            else:
+                img = image
+            
+            if img is None:
+                return [None, None, None, False]
+            
             # Auto-generate mask for clothes using SAM
             from extras.inpaint_mask import generate_mask_from_image, SAMOptions
             sam_options = SAMOptions(
@@ -990,10 +999,10 @@ with shared.gradio_root:
                 max_detections=0,
                 model_type=modules.config.default_inpaint_mask_sam_model
             )
-            mask, _, _, _ = generate_mask_from_image(image, 'sam', {}, sam_options)
+            mask, _, _, _ = generate_mask_from_image(img, 'sam', {}, sam_options)
             
             # Return: mask image, copy to IP slot 1, IP type = FaceSwap, enable mixing
-            return [mask, image, modules.flags.cn_ip_face, True]
+            return [mask, img, modules.flags.cn_ip_face, True]
         
         # Connect auto handler - only if preset enables it
         if modules.config.default_inpaint_method == modules.flags.inpaint_option_modify:
