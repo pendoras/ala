@@ -977,7 +977,7 @@ with shared.gradio_root:
         # Auto-mask and FaceSwap on image upload for clothes/body inpainting
         def auto_inpaint_on_upload(image):
             if image is None:
-                return [None, None, None, False]
+                return [None, None, None, None, None, False]
             
             # Handle Gradio image format (can be dict or numpy array)
             if isinstance(image, dict):
@@ -986,7 +986,7 @@ with shared.gradio_root:
                 img = image
             
             if img is None:
-                return [None, None, None, False]
+                return [None, None, None, None, None, False]
             
             # Auto-generate mask for clothes using SAM
             from extras.inpaint_mask import generate_mask_from_image, SAMOptions
@@ -1001,15 +1001,18 @@ with shared.gradio_root:
             )
             mask, _, _, _ = generate_mask_from_image(img, 'sam', {}, sam_options)
             
-            # Return: mask image, copy to IP slot 1, IP type = FaceSwap, enable mixing
-            return [mask, img, modules.flags.cn_ip_face, True]
+            # FaceSwap parameters: stop=0.9, weight=0.75 (from flags.default_parameters)
+            faceswap_stop, faceswap_weight = modules.flags.default_parameters[modules.flags.cn_ip_face]
+            
+            # Return: mask, IP image, IP type, IP stop, IP weight, mixing enabled
+            return [mask, img, modules.flags.cn_ip_face, faceswap_stop, faceswap_weight, True]
         
         # Connect auto handler - only if preset enables it
         if modules.config.default_inpaint_method == modules.flags.inpaint_option_modify:
             inpaint_input_image.upload(
                 fn=auto_inpaint_on_upload,
                 inputs=[inpaint_input_image],
-                outputs=[inpaint_mask_image, ip_images[0], ip_types[0], mixing_image_prompt_and_inpaint],
+                outputs=[inpaint_mask_image, ip_images[0], ip_types[0], ip_stops[0], ip_weights[0], mixing_image_prompt_and_inpaint],
                 show_progress=True, queue=True
             )
 
